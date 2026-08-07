@@ -1,5 +1,5 @@
 import { createStore, reconcile } from "solid-js/store"
-import { batch, createEffect, createMemo, createSignal, onCleanup } from "solid-js"
+import { batch, createEffect, createMemo } from "solid-js"
 import { createSimpleContext } from "@opencode-ai/ui/context"
 import { persisted } from "@/utils/persist"
 import { usePlatform } from "@/context/platform"
@@ -35,9 +35,7 @@ export interface Settings {
     showCustomAgents: boolean
     mobileTitlebarPosition: "top" | "bottom"
     newLayoutDesigns?: boolean
-    layoutTransitionEligible?: boolean
     agentVisibilityInitialized?: boolean
-    newInterfaceNoticeDismissed?: boolean
     shouldDisplayTabsToast?: boolean
   }
   appearance: {
@@ -57,38 +55,6 @@ export interface Settings {
 export const monoDefault = "System Mono"
 export const sansDefault = "System Sans"
 export const terminalDefault = "JetBrainsMono Nerd Font Mono"
-const legacyNewLayoutDesignsDefault = import.meta.env.VITE_OPENCODE_CHANNEL !== "prod"
-export const newLayoutDesignsDefault = true
-// Existing users can switch layouts until local midnight on this date. Set new Date(YYYY, M-1, D) to show.
-export const oldInterfaceSunset = new Date(2026, 8, 14)
-const newLayoutDesignsUpgradeCutoff = "1.17.19"
-
-function compareVersions(a: string, b: string) {
-  const parse = (version: string) => {
-    const match = /^v?(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/i.exec(version.trim())
-    if (!match) return
-    return match.slice(1).map(Number)
-  }
-  const left = parse(a)
-  const right = parse(b)
-  if (!left || !right) return
-  const index = left.findIndex((part, index) => part !== right[index])
-  return index === -1 ? 0 : left[index]! - right[index]!
-}
-
-export function isAppUpgrade(previous: string | undefined, current: string | undefined) {
-  if (!previous || !current) return false
-  const comparison = compareVersions(current, previous)
-  return comparison !== undefined && comparison > 0
-}
-
-export function shouldDisplayTabsToast(
-  previous: string | undefined,
-  current: string | undefined,
-  existingInstall: boolean,
-) {
-  return isAppUpgrade(previous, current) || (!previous && existingInstall)
-}
 
 export function hasExistingWebState(settings: Promise<string> | string | null, previousVersion: string | undefined) {
   return settings !== null || previousVersion !== undefined
@@ -97,38 +63,6 @@ export function hasExistingWebState(settings: Promise<string> | string | null, p
 export function initialAgentVisibility(initialized: boolean | undefined, existing: boolean, previousVersion?: string) {
   if (initialized === true) return
   return existing || previousVersion !== undefined
-}
-
-export function shouldEnableNewLayout(previous: string | undefined, current: string | undefined) {
-  if (!current) return false
-  const currentComparison = compareVersions(current, newLayoutDesignsUpgradeCutoff)
-  if (!previous) return currentComparison !== undefined && currentComparison > 0
-  if (!isAppUpgrade(previous, current)) return false
-  const previousComparison = compareVersions(previous, newLayoutDesignsUpgradeCutoff)
-  return (
-    previousComparison !== undefined &&
-    currentComparison !== undefined &&
-    previousComparison <= 0 &&
-    currentComparison > 0
-  )
-}
-
-export function layoutTransitionState(scheduled: boolean, eligible: boolean, retired: boolean, dismissed: boolean) {
-  return {
-    available: scheduled && eligible && !retired,
-    notice: scheduled && eligible && retired && !dismissed,
-  }
-}
-
-export const maximumSunsetTimeout = 2_147_483_647
-
-export function nextSunsetCheckDelay(sunset: number, now: number) {
-  return Math.min(Math.max(0, sunset - now), maximumSunsetTimeout)
-}
-
-export function resolveNewLayoutDesigns(retired: boolean, preference: boolean | undefined, fallback = true) {
-  if (retired) return true
-  return preference ?? fallback
 }
 
 const monoFallback =
@@ -350,11 +284,6 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
       root.style.setProperty("--font-family-sans", sansFontFamily(store.appearance?.sans))
     })
 
-    createEffect(() => {
-      if (store.general?.followup !== "queue") return
-      setStore("general", "followup", "steer")
-    })
-
     return {
       ready,
       get current() {
@@ -369,12 +298,9 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         setReleaseNotes(value: boolean) {
           setStore("general", "releaseNotes", value)
         },
-        followup: withFallback(
-          () => (store.general?.followup === "queue" ? "steer" : store.general?.followup),
-          defaultSettings.general.followup,
-        ),
+        followup: withFallback(() => store.general?.followup, defaultSettings.general.followup),
         setFollowup(value: "queue" | "steer") {
-          setStore("general", "followup", value === "queue" ? "steer" : value)
+          setStore("general", "followup", value)
         },
         showFileTree,
         setShowFileTree(value: boolean) {

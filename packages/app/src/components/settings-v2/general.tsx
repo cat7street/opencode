@@ -280,6 +280,10 @@ export const SettingsGeneralV2: Component<{
   const settings = useSettings()
   const mobile = createMediaQuery("(max-width: 767px)")
   const updater = useUpdaterAction()
+  const followupOptions = createMemo((): { value: "queue" | "steer"; label: string }[] => [
+    { value: "queue", label: language.t("settings.general.row.followup.option.queue") },
+    { value: "steer", label: language.t("settings.general.row.followup.option.steer") },
+  ])
   const permissionScope = createPermissionScopeController(() => props.sessionID)
   const shell = createShellSettingsController()
   const appearance = createAppearanceSettingsController()
@@ -367,6 +371,23 @@ export const SettingsGeneralV2: Component<{
               onChange={(checked) => settings.general.setEditToolPartsExpanded(checked)}
             />
           </div>
+        </SettingsRowV2>
+
+        <SettingsRowV2
+          title={language.t("settings.general.row.followup.title")}
+          description={language.t("settings.general.row.followup.description")}
+        >
+          <SelectV2
+            appearance="inline"
+            data-action="settings-followup"
+            options={followupOptions()}
+            current={followupOptions().find((option) => option.value === settings.general.followup())}
+            placement="bottom-end"
+            gutter={6}
+            value={(option) => option.value}
+            label={(option) => option.label}
+            onSelect={(option) => option && settings.general.setFollowup(option.value)}
+          />
         </SettingsRowV2>
 
         <Show when={mobile() && import.meta.env.VITE_OPENCODE_CHANNEL !== "prod"}>

@@ -132,13 +132,13 @@ beforeAll(async () => {
     },
   }))
 
-  mock.module("@opencode-ai/ui/toast", () => ({
-    Toast: { Region: () => null },
+  mock.module("@/utils/toast", () => ({
     showToast: () => 0,
   }))
 
   mock.module("@opencode-ai/core/util/encode", () => ({
     base64Encode: (value: string) => value,
+    checksum: (value: string) => value,
   }))
 
   mock.module("@/context/local", () => ({
@@ -594,5 +594,34 @@ describe("prompt submit worktree selection", () => {
     expect(storedSessions["/repo/worktree-a"]).toHaveLength(1)
     expect(storedSessions["/repo/worktree-a"]?.[0]).toMatchObject({ id: "session-1", title: "New session 1" })
     expect(optimisticSeeded).toEqual([true])
+  })
+
+  test("queues busy follow-ups without sending immediately", async () => {
+    params = { id: "session-1" }
+    const queued: unknown[] = []
+    const submit = createPromptSubmit({
+      prompt,
+      info: () => ({ id: "session-1" }),
+      imageAttachments: () => [],
+      commentCount: () => 0,
+      autoAccept: () => false,
+      mode: () => "normal",
+      working: () => true,
+      editor: () => undefined,
+      queueScroll: () => undefined,
+      promptLength: (value) => value.reduce((sum, part) => sum + ("content" in part ? part.content.length : 0), 0),
+      addToHistory: () => undefined,
+      resetHistoryNavigation: () => undefined,
+      setMode: () => undefined,
+      setPopover: () => undefined,
+      shouldQueue: () => true,
+      onQueue: (draft) => queued.push(draft),
+    })
+
+    await submit.handleSubmit({ preventDefault: () => undefined } as unknown as Event)
+
+    expect(sentPrompts).toEqual([])
+    expect(queued).toHaveLength(1)
+    expect(queued[0]).toMatchObject({ sessionID: "session-1" })
   })
 })
