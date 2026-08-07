@@ -1385,7 +1385,8 @@ const layer = Layer.effect(
 
         // now read config providers - includes any modifications from plugin config() hook
         const configProviders = Object.entries(cfg.provider ?? {})
-        const disabled = new Set(cfg.disabled_providers ?? [])
+        // opencode (OpenCode Zen) provider is permanently disabled by default.
+        const disabled = new Set([...(cfg.disabled_providers ?? []), "opencode"])
         const enabled = cfg.enabled_providers ? new Set(cfg.enabled_providers) : null
 
         function isProviderAllowed(providerID: ProviderV2.ID): boolean {
