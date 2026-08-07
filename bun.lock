@@ -834,6 +834,16 @@
         "vite": "catalog:",
       },
     },
+    "packages/sidebar-sync": {
+      "name": "@opencode-ai/sidebar-sync",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@tsconfig/bun": "catalog:",
+        "@types/bun": "catalog:",
+        "@typescript/native-preview": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/slack": {
       "name": "@opencode-ai/slack",
       "version": "1.18.15",
@@ -1995,6 +2005,8 @@
     "@opencode-ai/server": ["@opencode-ai/server@workspace:packages/server"],
 
     "@opencode-ai/session-ui": ["@opencode-ai/session-ui@workspace:packages/session-ui"],
+
+    "@opencode-ai/sidebar-sync": ["@opencode-ai/sidebar-sync@workspace:packages/sidebar-sync"],
 
     "@opencode-ai/slack": ["@opencode-ai/slack@workspace:packages/slack"],
 
