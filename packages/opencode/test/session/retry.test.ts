@@ -182,6 +182,7 @@ describe("session.retry.retryable", () => {
     "failed to fetch",
     "EAI_AGAIN",
     "response timed out",
+    "Upstream response stream was interrupted",
     "Please retry your request",
     "try your request again",
     "upstream returned status 524",
