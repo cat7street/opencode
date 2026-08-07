@@ -1,11 +1,9 @@
-import { beforeEach, describe, expect, test } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import path from "path"
 import { pathToFileURL } from "url"
-import { tmpdir } from "../fixture/fixture"
+import { tmpdir, withTestInstance } from "../fixture/fixture"
 import { LSPClient } from "@/lsp/client"
 import * as LSPServer from "@/lsp/server"
-import { WithInstance } from "../../src/project/with-instance"
-import * as Log from "@opencode-ai/core/util/log"
 
 function spawnFakeServer() {
   const { spawn } = require("child_process")
@@ -18,14 +16,10 @@ function spawnFakeServer() {
 }
 
 describe("LSPClient interop", () => {
-  beforeEach(async () => {
-    await Log.init({ print: true })
-  })
-
   test("handles workspace/workspaceFolders request", async () => {
     const handle = spawnFakeServer() as any
 
-    const client = await WithInstance.provide({
+    const client = await withTestInstance({
       directory: process.cwd(),
       fn: (ctx) =>
         LSPClient.create({
@@ -49,7 +43,7 @@ describe("LSPClient interop", () => {
   test("handles client/registerCapability request", async () => {
     const handle = spawnFakeServer() as any
 
-    const client = await WithInstance.provide({
+    const client = await withTestInstance({
       directory: process.cwd(),
       fn: (ctx) =>
         LSPClient.create({
@@ -73,7 +67,7 @@ describe("LSPClient interop", () => {
   test("handles client/unregisterCapability request", async () => {
     const handle = spawnFakeServer() as any
 
-    const client = await WithInstance.provide({
+    const client = await withTestInstance({
       directory: process.cwd(),
       fn: (ctx) =>
         LSPClient.create({
@@ -97,7 +91,7 @@ describe("LSPClient interop", () => {
   test("initialize does not overclaim unsupported diagnostics capabilities", async () => {
     const handle = spawnFakeServer() as any
 
-    const client = await WithInstance.provide({
+    const client = await withTestInstance({
       directory: process.cwd(),
       fn: (ctx) =>
         LSPClient.create({
@@ -125,7 +119,7 @@ describe("LSPClient interop", () => {
       gamma: true,
     }
 
-    const client = await WithInstance.provide({
+    const client = await withTestInstance({
       directory: process.cwd(),
       fn: (ctx) =>
         LSPClient.create({
@@ -155,7 +149,7 @@ describe("LSPClient interop", () => {
     const file = path.join(tmp.path, "client.ts")
     await Bun.write(file, "first\n")
 
-    await WithInstance.provide({
+    await withTestInstance({
       directory: tmp.path,
       fn: async (ctx) => {
         const client = await LSPClient.create({
@@ -199,7 +193,7 @@ describe("LSPClient interop", () => {
     const file = path.join(tmp.path, "client.ts")
     await Bun.write(file, "const x = 1\n")
 
-    await WithInstance.provide({
+    await withTestInstance({
       directory: tmp.path,
       fn: async (ctx) => {
         const client = await LSPClient.create({
@@ -246,7 +240,7 @@ describe("LSPClient interop", () => {
     const file = path.join(tmp.path, "client.ts")
     await Bun.write(file, "const x = 1\n")
 
-    await WithInstance.provide({
+    await withTestInstance({
       directory: tmp.path,
       fn: async (ctx) => {
         const client = await LSPClient.create({
@@ -294,7 +288,7 @@ describe("LSPClient interop", () => {
     const file = path.join(tmp.path, "client.cs")
     await Bun.write(file, "class C {}\n")
 
-    await WithInstance.provide({
+    await withTestInstance({
       directory: tmp.path,
       fn: async (ctx) => {
         const client = await LSPClient.create({
@@ -343,7 +337,7 @@ describe("LSPClient interop", () => {
     const file = path.join(tmp.path, "client.cs")
     await Bun.write(file, "class C {}\n")
 
-    await WithInstance.provide({
+    await withTestInstance({
       directory: tmp.path,
       fn: async (ctx) => {
         const client = await LSPClient.create({
@@ -397,7 +391,7 @@ describe("LSPClient interop", () => {
     await Bun.write(file, "class C {}\n")
     await Bun.write(related, "class D {}\n")
 
-    await WithInstance.provide({
+    await withTestInstance({
       directory: tmp.path,
       fn: async (ctx) => {
         const client = await LSPClient.create({
@@ -462,7 +456,7 @@ describe("LSPClient interop", () => {
     const file = path.join(tmp.path, "client.cs")
     await Bun.write(file, "class C {}\n")
 
-    await WithInstance.provide({
+    await withTestInstance({
       directory: tmp.path,
       fn: async (ctx) => {
         const client = await LSPClient.create({
