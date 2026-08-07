@@ -1,4 +1,7 @@
+import { settingsNavigation } from "./settings-navigation"
+
 export const dict: Record<string, string> = {
+  ...settingsNavigation,
   "desktop.menu.app": "OpenCode",
   "desktop.menu.file": "ফাইল",
   "desktop.menu.edit": "সম্পাদনা করুন",

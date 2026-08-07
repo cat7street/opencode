@@ -1,4 +1,7 @@
+import { settingsNavigation } from "./settings-navigation"
+
 export const dict = {
+  ...settingsNavigation,
   "desktop.menu.app": "OpenCode އެވެ",
   "desktop.menu.file": "ފައިލް",
   "desktop.menu.edit": "ބަދަލު ގެނައުން",

@@ -1,4 +1,7 @@
+import { settingsNavigation } from "./settings-navigation"
+
 export const dict = {
+  ...settingsNavigation,
   "command.category.suggested": "Suggeriti",
   "command.category.view": "Visualizzazione",
   "command.category.project": "Progetto",

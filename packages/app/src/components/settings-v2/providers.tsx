@@ -31,7 +31,6 @@ const PROVIDER_ICON_SIZE = 16
 
 export const SettingsProvidersV2: Component<{
   directory: Accessor<string | undefined>
-  onBack?: () => void
 }> = (props) => {
   const dialog = useDialog()
   const language = useLanguage()
@@ -39,11 +38,14 @@ export const SettingsProvidersV2: Component<{
   const protocol = useServerProtocol()
   const serverSync = useServerSync()
   const providers = useProviders(props.directory)
-  const providerConnect = useProviderConnectController({ onBack: props.onBack })
+  const providerConnect = useProviderConnectController()
 
   const connect = (provider?: string) => {
     providerConnect.select(provider)
-    void dialog.show(() => <DialogConnectProvider directory={props.directory} controller={providerConnect} />)
+    void dialog.push(
+      () => <DialogConnectProvider directory={props.directory} controller={providerConnect} />,
+      () => providerConnect.select(),
+    )
   }
 
   const connected = createMemo(() => {
@@ -248,7 +250,7 @@ export const SettingsProvidersV2: Component<{
                   variant="neutral"
                   icon="plus"
                   onClick={() => {
-                    dialog.show(() => <DialogCustomProvider onBack={dialog.close} />)
+                    dialog.push(() => <DialogCustomProvider onBack={dialog.close} />)
                   }}
                 >
                   {language.t("common.connect")}

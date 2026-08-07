@@ -1,7 +1,9 @@
 import { dict as en } from "./en"
+import { settingsNavigation } from "./settings-navigation"
 type Keys = keyof typeof en
 
 export const dict = {
+  ...settingsNavigation,
   "desktop.menu.app": "OpenCode",
   "desktop.menu.file": "Arkiv",
   "desktop.menu.edit": "Rediger",

@@ -1,7 +1,9 @@
 import { DESKTOP_NATIVE_ENGLISH } from "./desktop-native"
+import { settingsNavigation } from "./settings-navigation"
 
 export const dict = {
   ...DESKTOP_NATIVE_ENGLISH,
+  ...settingsNavigation,
   "command.category.suggested": "Suggested",
   "command.category.view": "View",
   "command.category.project": "Project",

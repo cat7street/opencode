@@ -1,8 +1,10 @@
 import { dict as en } from "./en"
+import { settingsNavigation } from "./settings-navigation"
 
 type Keys = keyof typeof en
 
 export const dict = {
+  ...settingsNavigation,
   "desktop.menu.app": "OpenCode",
   "desktop.menu.file": "文件",
   "desktop.menu.edit": "编辑",
@@ -882,6 +884,18 @@ export const dict = {
 
   "settings.tab.general": "通用",
   "settings.tab.shortcuts": "快捷键",
+  "settings.navigation.section.basic": "基础设置",
+  "settings.navigation.section.agent": "Agent 能力",
+  "settings.navigation.section.data": "数据与统计",
+  "settings.navigation.modelSettings": "模型设置",
+  "settings.navigation.subagents": "子智能体",
+  "settings.navigation.hooks": "钩子",
+  "settings.navigation.index": "索引库",
+  "settings.navigation.usage": "使用统计",
+  "settings.navigation.guide": "引导",
+  "settings.navigation.backToWorkspace": "返回工作区",
+  "settings.navigation.account.plan": "Max",
+  "settings.navigation.account.settings": "账户设置",
 
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "WSL 集成",
