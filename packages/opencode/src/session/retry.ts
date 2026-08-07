@@ -1,4 +1,5 @@
 import type { NamedError } from "@opencode-ai/core/util/error"
+import { SessionV1 } from "@opencode-ai/core/v1/session"
 import { Cause, Clock, Duration, Effect, Schedule } from "effect"
 import { MessageV2 } from "./message-v2"
 import { iife } from "@/util/iife"
@@ -27,11 +28,21 @@ export const RETRY_BACKOFF_FACTOR = 2
 export const RETRY_MAX_DELAY_NO_HEADERS = 30_000 // 30 seconds
 export const RETRY_MAX_DELAY = 2_147_483_647 // max 32-bit signed integer for setTimeout
 
+const RETRYABLE_MESSAGE_PATTERNS = [
+  /429|500|502|503|504|524/i,
+  /rate increased too quickly|rate limit|rate-limit|rate_limit|too many requests/i,
+  /overloaded|service unavailable|service_unavailable|service-unavailable|internal error|internal_error|internal server error|server error|server_error|server-error|provider returned error|provider_returned_error|provider-returned-error/i,
+  /terminated|fetch failed|failed to fetch|network error|upstream connect|connection error|connection refused|connection lost|socket connection was closed|socket hang up|reset before headers|getaddrinfo|enotfound|eai_again|econnrefused|econnreset|etimedout/i,
+  /upstream response stream (?:was )?interrupted/i,
+  /^timeout$|\b(?:request|response|connection|network|stream|read) (?:timeout|timed out|time out)\b/i,
+  /try your request again|retry your request|resource exhausted|resource_exhausted/i,
+]
+
 function cap(ms: number) {
   return Math.min(ms, RETRY_MAX_DELAY)
 }
 
-export function delay(attempt: number, error?: MessageV2.APIError) {
+export function delay(attempt: number, error?: SessionV1.APIError) {
   if (error) {
     const headers = error.data.responseHeaders
     if (headers) {
@@ -66,12 +77,18 @@ export function delay(attempt: number, error?: MessageV2.APIError) {
 
 export function retryable(error: Err, provider: string) {
   // context overflow errors should not be retried
-  if (MessageV2.ContextOverflowError.isInstance(error)) return undefined
-  if (MessageV2.APIError.isInstance(error)) {
+  if (SessionV1.ContextOverflowError.isInstance(error)) return undefined
+  if (SessionV1.APIError.isInstance(error)) {
     const status = error.data.statusCode
     // 5xx errors are transient server failures and should always be retried,
     // even when the provider SDK doesn't explicitly mark them as retryable.
-    if (!error.data.isRetryable && !(status !== undefined && status >= 500)) return undefined
+    if (
+      !error.data.isRetryable &&
+      !(status !== undefined && status >= 500) &&
+      !matchesRetryableMessage(error.data.message) &&
+      !matchesRetryableMessage(error.data.responseBody)
+    )
+      return undefined
     if (error.data.responseBody?.includes("FreeUsageLimitError")) {
       return {
         message: GO_UPSELL_MESSAGE,
@@ -121,33 +138,17 @@ export function retryable(error: Err, provider: string) {
     return { message: error.data.message.includes("Overloaded") ? "Provider is overloaded" : error.data.message }
   }
 
-  // Check for rate limit patterns in plain text error messages
-  const msg = isRecord(error.data) ? error.data.message : undefined
-  if (typeof msg === "string") {
-    const lower = msg.toLowerCase()
-    if (
-      lower.includes("rate increased too quickly") ||
-      lower.includes("rate limit") ||
-      lower.includes("too many requests")
-    ) {
-      return { message: msg }
-    }
-  }
-
-  const json = parseJSON(msg)
-  if (!json || typeof json !== "object") return undefined
-  const code = typeof json.code === "string" ? json.code : ""
-
-  if (json.type === "error" && json.error?.type === "too_many_requests") {
-    return { message: "Too Many Requests" }
-  }
-  if (code.includes("exhausted") || code.includes("unavailable")) {
-    return { message: "Provider is overloaded" }
-  }
-  if (json.type === "error" && typeof json.error?.code === "string" && json.error.code.includes("rate_limit")) {
-    return { message: "Rate Limited" }
-  }
+  const message = isRecord(error.data) ? error.data.message : undefined
+  if (typeof message !== "string") return undefined
+  const lower = message.toLowerCase()
+  if (lower.includes("too_many_requests")) return { message: "Too Many Requests" }
+  if (lower.includes("exhausted") || lower.includes("unavailable")) return { message: "Provider is overloaded" }
+  if (matchesRetryableMessage(message)) return { message }
   return undefined
+}
+
+function matchesRetryableMessage(value: unknown) {
+  return typeof value === "string" && RETRYABLE_MESSAGE_PATTERNS.some((pattern) => pattern.test(value))
 }
 
 function str(value: unknown) {
@@ -183,7 +184,7 @@ export function policy(opts: {
       const retry = retryable(error, opts.provider)
       if (!retry) return Cause.done(meta.attempt)
       return Effect.gen(function* () {
-        const wait = delay(meta.attempt, MessageV2.APIError.isInstance(error) ? error : undefined)
+        const wait = delay(meta.attempt, SessionV1.APIError.isInstance(error) ? error : undefined)
         const now = yield* Clock.currentTimeMillis
         yield* opts.set({
           attempt: meta.attempt,
